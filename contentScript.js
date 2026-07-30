@@ -13,7 +13,7 @@
                 hr
             `,
             loadMore: '.more-block.text--xsmall.async-button.default.ember-view',
-            navbarAdmin: 'li.navbar-item[data-test-id="Admin-7"]'
+            navbarList: '#navbar-body > ul.nav-list'
         },
         button: {
             clean: '🧻',
@@ -204,15 +204,15 @@
     const addInterfaceButton = () => {
         if (document.getElementById('fdc-clean-container')) return;
 
-        const navbarAdmin = document.querySelector(CONFIG.selectors.navbarAdmin);
-        if (!navbarAdmin) return;
+        const navbarList = document.querySelector(CONFIG.selectors.navbarList);
+        if (!navbarList) return;
 
         const container = document.createElement('li');
         container.id = 'fdc-clean-container';
         container.className = 'navbar-item';
         container.appendChild(createButton());
         
-        navbarAdmin.parentNode.insertBefore(container, navbarAdmin.nextSibling);
+        navbarList.appendChild(container);
         console.log('[Freshdesk History Cleaner] Button integrated into navbar.');
     };
 
@@ -231,7 +231,7 @@
                 return;
             }
 
-            if (document.querySelector(CONFIG.selectors.navbarAdmin) && 
+            if (document.querySelector(CONFIG.selectors.navbarList) && 
                 !document.getElementById('fdc-clean-container')) {
                 addInterfaceButton();
             }
@@ -239,7 +239,7 @@
 
         observer.observe(document.body, { childList: true, subtree: true });
 
-        if (isTicketPage() && document.querySelector(CONFIG.selectors.navbarAdmin)) {
+        if (isTicketPage() && document.querySelector(CONFIG.selectors.navbarList)) {
             addInterfaceButton();
         }
     };

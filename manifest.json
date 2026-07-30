@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Freshdesk History Cleaner",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Hides history repeats in Freshdesk responses for cleaner reading.",
   "host_permissions": ["*://*.freshdesk.com/*"],
   "icons": {
