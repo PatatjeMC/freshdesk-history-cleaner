@@ -297,12 +297,7 @@
     }
 
     function init() {
-        if (!isTicketPage()) {
-            console.log('[Freshdesk History Cleaner] Not a ticket page, skipping initialization.');
-            return;
-        }
-        
-        console.log('[Freshdesk History Cleaner] Ticket page detected, initializing...');
+        console.log('[Freshdesk History Cleaner] Initializing...');
         observeInterface();
     }
 })();
