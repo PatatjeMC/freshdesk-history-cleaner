@@ -8,7 +8,7 @@
         selectors: {
             message: '.ticket-details__item.ticket-details__requestor, .ticket-details__item:not(.ticket-details__requestor)',
             reprise: `
-                div[style*="border:none;border-top:solid #E1E1E1 1.0pt;padding:3.0pt 0cm 0cm 0cm"],
+                div[style*="border:none;border-top:solid"][style*="padding:3.0pt 0cm 0cm 0cm"],
                 hr[style*="display:inline-block"][style*="width:98%"],
                 hr
             `,
