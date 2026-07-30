@@ -98,8 +98,8 @@
                 cleanedCount++;
             });
 
-            console.log(`[Freshdesk History Cleaner] ${cleanedCount} message(s) nettoyé(s).`);
-            showNotification(`${cleanedCount} message(s) nettoyé(s).`);
+            console.log(`[Freshdesk History Cleaner] ${cleanedCount} message(s) cleaned.`);
+            showNotification(`${cleanedCount} message(s) cleaned.`);
         } catch (err) {
             console.error('[Freshdesk History Cleaner] Cleaning error:', err);
         }
@@ -119,8 +119,8 @@
 		cleaningActive = false;
 
 		document.getElementById('fdc-clean-btn').textContent = CONFIG.button.clean;
-		showNotification(`${restoredCount} message(s) restauré(s).`);
-		console.log(`[Freshdesk History Cleaner] ${restoredCount} message(s) restauré(s).`);
+		showNotification(`${restoredCount} message(s) restored.`);
+		console.log(`[Freshdesk History Cleaner] ${restoredCount} message(s) restored.`);
 	};
 	
 	const safelyRestoreContent = (element, html) => {
