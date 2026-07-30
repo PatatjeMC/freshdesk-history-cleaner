@@ -35,6 +35,7 @@
 
     const messageBackups = new Map();
     let cleaningActive = false;
+    let lastPagePath = window.location.pathname;
 
     // Utilities
     const isTicketPage = () => /\/a\/tickets\/\d+/.test(window.location.pathname);
@@ -226,6 +227,15 @@
     // Observers
     const observeInterface = () => {
         const observer = new MutationObserver(() => {
+            if (window.location.pathname !== lastPagePath) {
+                lastPagePath = window.location.pathname;
+
+                if(cleaningActive) {
+                    console.log('[Freshdesk History Cleaner] Page changed, restoring messages...');
+                    restoreMessages();
+                }
+            }
+
             if (!isTicketPage()) {
                 document.getElementById('fdc-clean-container')?.remove();
                 return;
