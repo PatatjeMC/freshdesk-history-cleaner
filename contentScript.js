@@ -12,6 +12,7 @@
                 hr[style*="display:inline-block"][style*="width:98%"],
                 hr
             `,
+            blockquote: 'blockquote[style*="border-left"]',
             loadMore: '.more-block.text--xsmall.async-button.default.ember-view',
             navbarList: '#navbar-body > ul.nav-list'
         },
@@ -69,7 +70,7 @@
         }
     };
 
-    const cleanMessage = (message, repriseDivs) => {
+    const cleanMessage = (message, repriseDivs, blockquotes) => {
         messageBackups.set(message, {
             html: message.innerHTML,
             timestamp: Date.now()
@@ -79,6 +80,16 @@
             div.style.display = 'none';
             const nextDiv = repriseDivs[index + 1];
             hideContent(div, nextDiv || null);
+        });
+
+        blockquotes.forEach(bq => {
+            const parent = bq.parentElement;
+            if (parent && parent !== message && parent.tagName.toLowerCase() === 'div') {
+                const childElements = Array.from(parent.children);
+                if (childElements.length === 2 && childElements[1] === bq) {
+                    parent.style.display = 'none';
+                }
+            }
         });
     };
 
@@ -93,9 +104,11 @@
                 if (messageBackups.has(msg)) return;
                 
                 const repriseDivs = msg.querySelectorAll(CONFIG.selectors.reprise);
-                if (repriseDivs.length === 0) return;
+                const blockquotes = msg.querySelectorAll(CONFIG.selectors.blockquote);
+                
+                if (repriseDivs.length === 0 && blockquotes.length === 0) return;
 
-                cleanMessage(msg, repriseDivs);
+                cleanMessage(msg, repriseDivs, blockquotes);
                 cleanedCount++;
             });
 
