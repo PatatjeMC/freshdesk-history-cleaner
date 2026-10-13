@@ -10,7 +10,8 @@
             reprise: `
                 div[style*="border:none;border-top:solid"][style*="padding:3.0pt 0cm 0cm 0cm"],
                 hr[style*="display:inline-block"][style*="width:98%"],
-                hr
+                hr,
+				#mail-editor-reference-message-container
             `,
             blockquote: 'blockquote[style*="border-left"]',
             loadMore: '.more-block.text--xsmall.async-button.default.ember-view',
