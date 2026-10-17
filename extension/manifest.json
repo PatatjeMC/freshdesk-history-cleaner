@@ -2,10 +2,14 @@
   "manifest_version": 3,
   "name": "Freshdesk History Cleaner",
   "author": "Noah",
-  "version": "2.1",
+  "version": "3.0",
   "description": "Hides history repeats in Freshdesk responses for cleaner reading.",
   "homepage_url": "https://github.com/PatatjeMC/freshdesk-history-cleaner",
   "host_permissions": ["*://*.freshdesk.com/*"],
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "popup.html"
+  },
   "icons": {
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"

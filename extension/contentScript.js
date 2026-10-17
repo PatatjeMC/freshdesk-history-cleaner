@@ -18,16 +18,10 @@
             navbarList: '#navbar-body > ul.nav-list'
         },
         button: {
-            clean: '🧻',
-            restore: '♻️',
-            styles: {
-                background: '#ebeff3',
-                border: 'none',
-                borderRadius: '7px',
-                fontSize: '24px',
-                width: '100%',
-                height: '40px'
-            }
+            cleanIcon: `<svg class="nav-icon" stroke="#000000" fill="#000000" stroke-width="0" viewBox="0 0 256 256" height="32" width="32" xmlns="http://www.w3.org/2000/svg"><path d="M184,120a8,8,0,0,1-8,8H160a8,8,0,0,1,0-16h16A8,8,0,0,1,184,120Zm56,0v88a16,16,0,0,1-16,16H112a16,16,0,0,1-16-16V186.35C87.37,200.37,76.18,208,64,208c-13.87,0-26.46-9.89-35.44-27.85C20.46,164,16,142.59,16,120s4.46-43.95,12.56-60.15C37.54,41.89,50.13,32,64,32H192c13.87,0,26.46,9.89,35.44,27.85C235.54,76.05,240,97.41,240,120ZM76,120a12,12,0,1,0-12,12A12,12,0,0,0,76,120Zm148,8H208a8,8,0,0,1,0-16h15.79C221.84,73.9,206.16,48,192,48H92.12a73.6,73.6,0,0,1,7.32,11.85c7.14,14.28,11.44,32.56,12.37,52.15H128a8,8,0,0,1,0,16H112v80H224Z"/></svg>`,
+			cleanLabel: 'Clean messages',
+            restoreIcon: `<svg class="nav-icon" stroke="#000000" fill="#000000" stroke-width="0" viewBox="0 0 256 256" height="32" width="32" xmlns="http://www.w3.org/2000/svg"><path d="M100,208a12,12,0,0,1-12,12H40a28,28,0,0,1-24.23-42l29.45-50.88-4.76,1.27a12,12,0,1,1-6.2-23.18l32.77-8.77a12,12,0,0,1,14.69,8.48l8.79,32.77a12,12,0,1,1-23.17,6.22L66.08,139l-29.5,51A4,4,0,0,0,40,196H88A12,12,0,0,1,100,208ZM128,36a3.87,3.87,0,0,1,3.46,2l29.45,50.87-4.75-1.27A12,12,0,1,0,150,110.78l32.77,8.79a12,12,0,0,0,14.69-8.48L206.2,78.3A12,12,0,1,0,183,72.08l-1.31,4.86L152.23,26a28,28,0,0,0-48.46,0L80.61,66a12,12,0,1,0,20.77,12l23.16-40A3.87,3.87,0,0,1,128,36ZM240.19,178l-23.14-40a12,12,0,1,0-20.77,12l23.14,40a4,4,0,0,1-3.46,6H157l3.51-3.51a12,12,0,1,0-17-17l-24,24a12,12,0,0,0,0,17l24,24a12,12,0,1,0,17-17L157,220h59a28,28,0,0,0,24.23-42Z"/></svg>`,
+			restoreLabel: 'Restore messages'
         },
         notification: {
             duration: 1750,
@@ -36,6 +30,10 @@
     };
 
     const messageBackups = new Map();
+    let settings = {
+        skipFirstMessage: true,
+        defaultAutoClean: false
+    };
     let cleaningActive = false;
     let lastPagePath = window.location.pathname;
 
@@ -94,14 +92,15 @@
         });
     };
 
-    const cleanMessages = () => {
+    const cleanMessages = (showStatus = true) => {
         console.log('[Freshdesk History Cleaner] Starting cleaning...');
 
         try {
             const messages = document.querySelectorAll(CONFIG.selectors.message);
             let cleanedCount = 0;
 
-            messages.forEach(msg => {
+            messages.forEach((msg, index) => {
+                if (settings.skipFirstMessage && index === 0) return;
                 if (messageBackups.has(msg)) return;
                 
                 const repriseDivs = msg.querySelectorAll(CONFIG.selectors.reprise);
@@ -114,13 +113,15 @@
             });
 
             console.log(`[Freshdesk History Cleaner] ${cleanedCount} message(s) cleaned.`);
-            showNotification(`${cleanedCount} message(s) cleaned.`);
+            if (showStatus) {
+                showNotification(`${cleanedCount} message(s) cleaned.`);
+            }
         } catch (err) {
             console.error('[Freshdesk History Cleaner] Cleaning error:', err);
         }
     };
 
-    const restoreMessages = () => {
+        const restoreMessages = (showStatus = true) => {
 		let restoredCount = 0;
 		
 		messageBackups.forEach((backup, msg) => {
@@ -133,8 +134,13 @@
 		messageBackups.clear();
 		cleaningActive = false;
 
-		document.getElementById('fdc-clean-btn').textContent = CONFIG.button.clean;
-		showNotification(`${restoredCount} message(s) restored.`);
+		const span = document.getElementById('fdc-clean-icon');
+		span.setAttribute('aria-label', CONFIG.button.cleanLabel);
+        span.innerHTML = CONFIG.button.cleanIcon;
+		
+        if (showStatus) {
+            showNotification(`${restoredCount} message(s) restored.`);
+        }
 		console.log(`[Freshdesk History Cleaner] ${restoredCount} message(s) restored.`);
 	};
 	
@@ -186,35 +192,28 @@
         }, CONFIG.notification.duration);
     };
 
-    const createButton = () => {
-        const button = document.createElement('button');
-        button.id = 'fdc-clean-btn';
-        button.className = 'navbar-link ember-view';
-        button.type = 'button';
-        button.textContent = CONFIG.button.clean;
-        
-        Object.assign(button.style, {
-            ...CONFIG.button.styles,
-            color: 'inherit',
-            cursor: 'pointer',
-            padding: '0',
-            margin: '0',
-            textAlign: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-        });
+	const createButton = () => {
+		const link = document.createElement('a');
+		link.id = 'fdc-clean-btn';
+		link.className = 'nav-link ember-view';
+		link.href = '#';
+		
+		const span = document.createElement('span');
+		span.id = 'fdc-clean-icon';
+		span.className = 'nav-icon-wrapper hint--right hint--rounded';
+		
+		span.setAttribute('aria-label', CONFIG.button.cleanLabel);
+		span.innerHTML = CONFIG.button.cleanIcon;
 
-        button.onclick = () => {
-            cleaningActive ? restoreMessages() : activateCleaning();
-        };
+		link.appendChild(span);
 
-        button.onmouseenter = () => button.style.opacity = '0.8';
-        button.onmouseleave = () => button.style.opacity = '1';
+		link.onclick = (e) => {
+			e.preventDefault(); // Prevent page jumps when clicking the '#' anchor link
+			cleaningActive ? restoreMessages() : activateCleaning();
+		};
 
-        return button;
-    };
+		return link;
+	};
 
     const addInterfaceButton = () => {
         if (document.getElementById('fdc-clean-container')) return;
@@ -231,11 +230,56 @@
         console.log('[Freshdesk History Cleaner] Button integrated into navbar.');
     };
 
-    const activateCleaning = () => {
-        cleanMessages();
+    const activateCleaning = (showStatus = true) => {
+        cleanMessages(showStatus);
         cleaningActive = true;
-        document.getElementById('fdc-clean-btn').textContent = CONFIG.button.restore;
+		const span = document.getElementById('fdc-clean-icon');
+		if (span) {
+			span.setAttribute('aria-label', CONFIG.button.restoreLabel);
+            span.innerHTML = CONFIG.button.restoreIcon;
+        }
         observeChanges();
+    };
+
+    const observeSettings = () => {
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName !== 'sync' || !changes.skipFirstMessage) return;
+
+            settings.skipFirstMessage = changes.skipFirstMessage.newValue;
+            if (cleaningActive) {
+                restoreMessages(false);
+                activateCleaning(false);
+            }
+        });
+    };
+
+    const waitForMessagesAndActivate = () => {
+        let observer;
+        let messagesHaveLoaded = false;
+
+        const containsMessage = (node) => {
+            if (node.nodeType !== Node.ELEMENT_NODE) return false;
+            return node.matches(CONFIG.selectors.message) ||
+                Boolean(node.querySelector(CONFIG.selectors.message));
+        };
+
+        const activateWhenReady = (mutations) => {
+            if (!settings.defaultAutoClean || cleaningActive) return;
+
+            const messageAdded = mutations.some(mutation =>
+                Array.from(mutation.addedNodes).some(containsMessage)
+            );
+            if (messageAdded) messagesHaveLoaded = true;
+
+            const messages = document.querySelectorAll(CONFIG.selectors.message);
+            if (!messagesHaveLoaded || messages.length === 0) return;
+
+            observer.disconnect();
+            activateCleaning(false);
+        };
+
+        observer = new MutationObserver(activateWhenReady);
+        observer.observe(document.body, { childList: true, subtree: true });
     };
 
     // Observers
@@ -270,41 +314,27 @@
 
     const observeChanges = () => {
         const loadMoreButton = document.querySelector(CONFIG.selectors.loadMore);
-        if (!loadMoreButton) {
-            console.log('[Freshdesk History Cleaner] No "load more messages" button detected.');
-            return;
-        }
-
-        const conversationArea = loadMoreButton.closest('.ticket-thread, .ticket-conversation, body');
-        if (!conversationArea) return;
+        const conversationArea = loadMoreButton?.closest('.ticket-thread, .ticket-conversation, body') || document.body;
 
         let cleaningInProgress = false;
-        let lastExecution = 0;
 
         const observer = new MutationObserver((mutations) => {
             if (!cleaningActive || cleaningInProgress) return;
 
             const hasNewMessages = mutations.some(m =>
                 Array.from(m.addedNodes).some(n =>
-                    n.nodeType === Node.ELEMENT_NODE && n.matches?.(CONFIG.selectors.message)
+                    n.nodeType === Node.ELEMENT_NODE &&
+                    (n.matches?.(CONFIG.selectors.message) || n.querySelector?.(CONFIG.selectors.message))
                 )
             );
 
-            if (!hasNewMessages || Date.now() - lastExecution < 2000) return;
+            if (!hasNewMessages) return;
 
             cleaningInProgress = true;
-            lastExecution = Date.now();
-            observer.disconnect();
 
             console.log('[Freshdesk History Cleaner] New messages detected, cleaning...');
-            
-            setTimeout(() => {
-                cleanMessages();
-                setTimeout(() => {
-                    observer.observe(conversationArea, { childList: true, subtree: true });
-                    cleaningInProgress = false;
-                }, 1000);
-            }, 500);
+            cleanMessages(false);
+            cleaningInProgress = false;
         });
 
         observer.observe(conversationArea, { childList: true, subtree: true });
@@ -320,8 +350,21 @@
         init();
     }
 
-    function init() {
+    async function init() {
         console.log('[Freshdesk History Cleaner] Initializing...');
+        try {
+            settings = await new Promise(resolve => {
+                chrome.storage.sync.get(settings, resolve);
+            });
+        } catch (error) {
+            console.warn('[Freshdesk History Cleaner] Could not load settings.', error);
+        }
+
+        observeSettings();
         observeInterface();
+
+        if (settings.defaultAutoClean && isTicketPage()) {
+            waitForMessagesAndActivate();
+        }
     }
 })();
