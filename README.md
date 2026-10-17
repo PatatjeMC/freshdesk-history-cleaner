@@ -18,3 +18,5 @@ The extension popup includes these settings:
 The repository also includes a standalone userscript version for Tampermonkey, Greasemonkey, and compatible userscript managers. Install the userscript from the `userscript` folder to use the cleaner without installing the browser extension.
 
 The userscript has the same settings available through your userscript manager's menu commands. Use the menu commands to toggle **Skip first message** and **Default auto clean**.
+
+*Not affiliated with Freshdesk*
