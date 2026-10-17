@@ -3,7 +3,7 @@
   "name": "Freshdesk History Cleaner",
   "author": "Noah",
   "version": "3.0",
-  "description": "Hides history repeats in Freshdesk responses for cleaner reading.",
+  "description": "Extension that hides history repeats in Freshdesk responses for cleaner reading.",
   "homepage_url": "https://github.com/PatatjeMC/freshdesk-history-cleaner",
   "host_permissions": ["*://*.freshdesk.com/*"],
   "permissions": ["storage"],
@@ -22,7 +22,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "freshdesk-cleaner-fork@patatje.dev",
+      "id": "freshdesk-history-cleaner@patatje.dev",
       "data_collection_permissions": {
         "required": ["none"]
       }
