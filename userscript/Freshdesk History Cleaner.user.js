@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freshdesk History Cleaner
-// @version      3.0
-// @description  Hides history repeats in Freshdesk responses for cleaner reading.
+// @version      3.1
+// @description  Userscript that hides history repeats in Freshdesk responses for cleaner reading.
 // @author       Noah
 // @homepageURL  https://github.com/PatatjeMC/freshdesk-history-cleaner
 // @match        *://*.freshdesk.com/*
@@ -27,7 +27,6 @@
 				#mail-editor-reference-message-container
             `,
             blockquote: 'blockquote[style*="border-left"]',
-            loadMore: '.more-block.text--xsmall.async-button.default.ember-view',
             navbarList: '#navbar-body > ul.nav-list'
         },
         button: {
@@ -50,9 +49,17 @@
     let cleaningActive = false;
     let lastPagePath = window.location.pathname;
     let settingsMenuIds = [];
+    let autoCleanPending = false;
+    let messagesHaveLoaded = false;
 
     // Utilities
     const isTicketPage = () => /\/a\/tickets\/\d+/.test(window.location.pathname);
+
+    const containsMessage = (node) => {
+        if (node.nodeType !== Node.ELEMENT_NODE) return false;
+        return node.matches(CONFIG.selectors.message) ||
+            Boolean(node.querySelector(CONFIG.selectors.message));
+    };
 
     const hideNonCriticalErrors = (e) => {
         if (e.filename?.includes('freshconnect-sidebar-core.js')) {
@@ -63,23 +70,28 @@
     };
 
     // Core functionality
-    const hideContent = (startElement, endElement = null) => {
-        let node = startElement.nextSibling;
-        while (node && node !== endElement) {
-            const next = node.nextSibling;
-            try {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    node.style.display = 'none';
-                } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-                    const span = document.createElement('span');
-                    span.textContent = node.textContent;
-                    span.style.display = 'none';
-                    node.parentNode?.replaceChild(span, node);
+    const hideContent = (startElement, endElement, container) => {
+        let current = startElement;
+        while (current && current !== container) {
+            let node = current.nextSibling;
+            while (node) {
+                if (node === endElement) return;
+                const next = node.nextSibling;
+                try {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        node.style.display = 'none';
+                    } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                        const span = document.createElement('span');
+                        span.textContent = node.textContent;
+                        span.style.display = 'none';
+                        node.parentNode?.replaceChild(span, node);
+                    }
+                } catch (e) {
+                    console.warn('[Freshdesk History Cleaner] Ignored deleted node during cleaning.');
                 }
-            } catch (e) {
-                console.warn('[Freshdesk History Cleaner] Ignored deleted node during cleaning.');
+                node = next;
             }
-            node = next;
+            current = current.parentNode;
         }
     };
 
@@ -92,7 +104,7 @@
         repriseDivs.forEach((div, index) => {
             div.style.display = 'none';
             const nextDiv = repriseDivs[index + 1];
-            hideContent(div, nextDiv || null);
+            hideContent(div, nextDiv || null, message);
         });
 
         blockquotes.forEach(bq => {
@@ -254,7 +266,6 @@
 			span.setAttribute('aria-label', CONFIG.button.restoreLabel);
             span.innerHTML = CONFIG.button.restoreIcon;
         }
-        observeChanges();
     };
 
     const registerSettingsMenu = () => {
@@ -282,38 +293,31 @@
         registerSettingMenu('defaultAutoClean', 'Default auto clean');
     };
 
-    const waitForMessagesAndActivate = () => {
-        let observer;
-        let messagesHaveLoaded = false;
+    const handleNewMessages = (mutations) => {
+        if (!autoCleanPending && !cleaningActive) return;
 
-        const containsMessage = (node) => {
-            if (node.nodeType !== Node.ELEMENT_NODE) return false;
-            return node.matches(CONFIG.selectors.message) ||
-                Boolean(node.querySelector(CONFIG.selectors.message));
-        };
+        const messageAdded = mutations.some(mutation =>
+            Array.from(mutation.addedNodes).some(containsMessage)
+        );
 
-        const activateWhenReady = (mutations) => {
-            if (!settings.defaultAutoClean || cleaningActive) return;
-
-            const messageAdded = mutations.some(mutation =>
-                Array.from(mutation.addedNodes).some(containsMessage)
-            );
+        if (autoCleanPending && settings.defaultAutoClean && !cleaningActive) {
             if (messageAdded) messagesHaveLoaded = true;
+            if (!messagesHaveLoaded || !document.querySelector(CONFIG.selectors.message)) return;
 
-            const messages = document.querySelectorAll(CONFIG.selectors.message);
-            if (!messagesHaveLoaded || messages.length === 0) return;
-
-            observer.disconnect();
+            autoCleanPending = false;
             activateCleaning(false);
-        };
+            return;
+        }
 
-        observer = new MutationObserver(activateWhenReady);
-        observer.observe(document.body, { childList: true, subtree: true });
+        if (cleaningActive && messageAdded) {
+            console.log('[Freshdesk History Cleaner] New messages detected, cleaning...');
+            cleanMessages(false);
+        }
     };
 
     // Observers
     const observeInterface = () => {
-        const observer = new MutationObserver(() => {
+        const observer = new MutationObserver((mutations) => {
             if (window.location.pathname !== lastPagePath) {
                 lastPagePath = window.location.pathname;
 
@@ -321,6 +325,11 @@
                     console.log('[Freshdesk History Cleaner] Page changed, restoring messages...');
                     restoreMessages();
                 }
+
+                autoCleanPending = settings.defaultAutoClean && isTicketPage();
+                messagesHaveLoaded = false;
+            } else {
+                handleNewMessages(mutations);
             }
 
             if (!isTicketPage()) {
@@ -341,35 +350,6 @@
         }
     };
 
-    const observeChanges = () => {
-        const loadMoreButton = document.querySelector(CONFIG.selectors.loadMore);
-        const conversationArea = loadMoreButton?.closest('.ticket-thread, .ticket-conversation, body') || document.body;
-
-        let cleaningInProgress = false;
-
-        const observer = new MutationObserver((mutations) => {
-            if (!cleaningActive || cleaningInProgress) return;
-
-            const hasNewMessages = mutations.some(m =>
-                Array.from(m.addedNodes).some(n =>
-                    n.nodeType === Node.ELEMENT_NODE &&
-                    (n.matches?.(CONFIG.selectors.message) || n.querySelector?.(CONFIG.selectors.message))
-                )
-            );
-
-            if (!hasNewMessages) return;
-
-            cleaningInProgress = true;
-
-            console.log('[Freshdesk History Cleaner] New messages detected, cleaning...');
-            cleanMessages(false);
-            cleaningInProgress = false;
-        });
-
-        observer.observe(conversationArea, { childList: true, subtree: true });
-        console.log('[Freshdesk History Cleaner] New messages observer activated.');
-    };
-
     // Initialization
     window.addEventListener('error', hideNonCriticalErrors);
 
@@ -384,8 +364,6 @@
         registerSettingsMenu();
         observeInterface();
 
-        if (settings.defaultAutoClean && isTicketPage()) {
-            waitForMessagesAndActivate();
-        }
+        autoCleanPending = settings.defaultAutoClean && isTicketPage();
     }
 })();

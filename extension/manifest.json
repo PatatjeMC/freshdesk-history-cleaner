@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Freshdesk History Cleaner",
   "author": "Noah",
-  "version": "3.0",
+  "version": "3.1",
   "description": "Extension that hides history repeats in Freshdesk responses for cleaner reading.",
   "homepage_url": "https://github.com/PatatjeMC/freshdesk-history-cleaner",
   "host_permissions": ["*://*.freshdesk.com/*"],
